@@ -86,4 +86,21 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
             _feeAmount
         );
     }
+
+    function submitGuess(
+        uint256 _roundId,
+        uint256 _guess
+    ) external payable nonReentrant {
+        Round storage round = rounds[_roundId];
+        require(round.submissionDeadline > 0, "Round does not exist");
+        require(
+            block.timestamp < round.submissionDeadline,
+            "Submission deadline has passed"
+        );
+        require(msg.value == round.feeAmount, "Incorrect fee amount");
+
+        submissions[_roundId][msg.sender].push(_guess);
+
+        emit GuessSubmitted(_roundId, msg.sender, _guess);
+    }
 }
