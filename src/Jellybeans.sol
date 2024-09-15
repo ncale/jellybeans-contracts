@@ -26,4 +26,24 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     mapping(uint256 => Round) public rounds;
     mapping(uint256 => mapping(address => uint256[])) public submissions;
     mapping(uint256 => address[]) public winners;
+
+    event RoundInitialized(
+        uint256 indexed roundId,
+        string question,
+        uint256 submissionDeadline,
+        uint256 potAmount,
+        uint256 feeAmount
+    );
+    event GuessSubmitted(
+        uint256 indexed roundId,
+        address indexed participant,
+        uint256 guess
+    );
+    event WinnerSelected(
+        uint256 indexed roundId,
+        address[] winners,
+        uint256 correctAnswer,
+        uint256 prizePerWinner
+    );
+    event FeesWithdrawn(address owner, uint256 amount);
 }
