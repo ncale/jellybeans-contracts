@@ -51,4 +51,36 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         opToken = IERC20(_opTokenAddress);
         _grantRole(OWNER_ROLE, msg.sender);
     }
+
+    function initRound(
+        string memory _question,
+        uint256 _submissionDeadline,
+        uint256 _potAmount,
+        uint256 _feeAmount
+    ) external onlyRole(ADMIN_ROLE) {
+        require(
+            _submissionDeadline > block.timestamp,
+            "Submission deadline must be in the future"
+        );
+
+        currentRound++;
+        rounds[currentRound] = Round({
+            question: _question,
+            submissionDeadline: _submissionDeadline,
+            potAmount: _potAmount,
+            feeAmount: _feeAmount,
+            correctAnswer: 0,
+            isFinalized: false
+        });
+
+        opToken.safeTransferFrom(msg.sender, address(this), _potAmount);
+
+        emit RoundInitialized(
+            currentRound,
+            _question,
+            _submissionDeadline,
+            _potAmount,
+            _feeAmount
+        );
+    }
 }
