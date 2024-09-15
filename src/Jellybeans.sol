@@ -46,4 +46,9 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         uint256 prizePerWinner
     );
     event FeesWithdrawn(address owner, uint256 amount);
+
+    constructor(address _opTokenAddress) {
+        opToken = IERC20(_opTokenAddress);
+        _grantRole(OWNER_ROLE, msg.sender);
+    }
 }
