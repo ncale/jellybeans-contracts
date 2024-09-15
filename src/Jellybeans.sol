@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract Jellybeans is AccessControl, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+    struct Round {
+        string question;
+        uint256 submissionDeadline;
+        uint256 potAmount;
+        uint256 feeAmount;
+        uint256 correctAnswer;
+        bool isFinalized;
+    }
+
+    IERC20 public opToken;
+    uint256 public currentRound;
+    mapping(uint256 => Round) public rounds;
+    mapping(uint256 => mapping(address => uint256[])) public submissions;
+    mapping(uint256 => address[]) public winners;
+}
