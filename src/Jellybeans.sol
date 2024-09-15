@@ -22,6 +22,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     }
 
     IERC20 public opToken;
+    address private reserveAccount;
+
     uint256 public currentRound;
     mapping(uint256 => Round) public rounds;
     mapping(uint256 => mapping(address => uint256[])) public submissions;
@@ -47,8 +49,9 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     );
     event FeesWithdrawn(address owner, uint256 amount);
 
-    constructor(address _opTokenAddress) {
+    constructor(address _opTokenAddress, address _reserveAccount) {
         opToken = IERC20(_opTokenAddress);
+        reserveAccount = _reserveAccount;
         _grantRole(OWNER_ROLE, msg.sender);
     }
 
@@ -73,7 +76,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
             isFinalized: false
         });
 
-        opToken.safeTransferFrom(msg.sender, address(this), _potAmount);
+        opToken.safeTransferFrom(reserveAccount, address(this), _potAmount);
 
         emit RoundInitialized(
             currentRound,
