@@ -126,5 +126,14 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         emit FeesWithdrawn(_msgSender(), balance);
     }
 
+    function withdrawTokens(uint256 _amount) external onlyRole(OWNER_ROLE) {
+        uint256 balance = potToken.balanceOf(address(this));
+        require(balance > _amount, "Not enough tokens to withdraw");
+
+        potToken.safeTransfer(reserveAccount, _amount);
+
+        emit FeesWithdrawn(_msgSender(), balance);
+    }
+
     receive() external payable {}
 }
