@@ -104,4 +104,16 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
 
         emit GuessSubmitted(_roundId, msg.sender, _guess);
     }
+    
+    function withdrawFees() external onlyRole(OWNER_ROLE) {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No fees to withdraw");
+
+        (bool success, ) = _msgSender().call{value: balance}("");
+        require(success, "Failed to send fees to owner");
+
+        emit FeesWithdrawn(_msgSender(), balance);
+    }
+
+    receive() external payable {}
 }
