@@ -21,13 +21,17 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         bool isFinalized;
     }
 
+    struct Submission {
+        address submitter;
+        uint256 entry;
+    }
+
     IERC20 public opToken;
     address private reserveAccount;
 
     uint256 public currentRound;
-    mapping(uint256 => Round) public rounds;
-    mapping(uint256 => mapping(address => uint256[])) public submissions;
-    mapping(uint256 => address[]) public winners;
+    mapping(uint256 => Round) public rounds; // round => Round
+    mapping(uint256 => Submission[]) public submissions; // round => Submission[]
 
     event RoundInitialized(
         uint256 indexed roundId,
@@ -100,11 +104,13 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         );
         require(msg.value == round.feeAmount, "Incorrect fee amount");
 
-        submissions[_roundId][msg.sender].push(_guess);
+        submissions[_roundId].push(
+            Submission({submitter: msg.sender, entry: _guess})
+        );
 
         emit GuessSubmitted(_roundId, msg.sender, _guess);
     }
-    
+
     function withdrawFees() external onlyRole(OWNER_ROLE) {
         uint256 balance = address(this).balance;
         require(balance > 0, "No fees to withdraw");
