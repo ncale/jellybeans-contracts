@@ -26,7 +26,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         uint256 entry;
     }
 
-    IERC20 public immutable opToken;
+    IERC20 private immutable potToken;
     address private immutable reserveAccount;
 
     uint256 public currentRound;
@@ -41,8 +41,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     event WinnerSelected(uint256 indexed roundId, address[] winners, uint256 correctAnswer, uint256 prizePerWinner);
     event FeesWithdrawn(address owner, uint256 amount);
 
-    constructor(address _opTokenAddress, address _reserveAccount) {
-        opToken = IERC20(_opTokenAddress);
+    constructor(address _potTokenAddress, address _reserveAccount) {
+        potToken = IERC20(_potTokenAddress);
         reserveAccount = _reserveAccount;
         _grantRole(OWNER_ROLE, msg.sender);
         _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
@@ -64,7 +64,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
             isFinalized: false
         });
 
-        opToken.safeTransferFrom(reserveAccount, address(this), _potAmount);
+        potToken.safeTransferFrom(reserveAccount, address(this), _potAmount);
 
         emit RoundInitialized(currentRound, _question, _submissionDeadline, _potAmount, _feeAmount);
     }
@@ -105,7 +105,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
 
         uint256 prizePerWinner = round.potAmount / winners[_roundId].length;
         for (uint256 i = 0; i < winners[_roundId].length; i++) {
-            opToken.safeTransfer(winners[_roundId][i], prizePerWinner);
+            potToken.safeTransfer(winners[_roundId][i], prizePerWinner);
         }
 
         emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer, prizePerWinner);
