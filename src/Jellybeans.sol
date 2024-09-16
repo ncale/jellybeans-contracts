@@ -32,6 +32,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     uint256 public currentRound;
     mapping(uint256 => Round) public rounds; // round => Round
     mapping(uint256 => Submission[]) public submissions; // round => Submission[]
+    mapping(uint256 => address[]) public winners; // round => address[]
 
     event RoundInitialized(
         uint256 indexed roundId, string question, uint256 submissionDeadline, uint256 potAmount, uint256 feeAmount
@@ -77,6 +78,37 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         submissions[_roundId].push(Submission({submitter: msg.sender, entry: _guess}));
 
         emit GuessSubmitted(_roundId, msg.sender, _guess);
+    }
+
+    function setCorrectAnswer(uint256 _roundId, uint256 _correctAnswer) external onlyRole(OPERATOR_ROLE) nonReentrant {
+        Round storage round = rounds[_roundId];
+        require(block.timestamp >= round.submissionDeadline, "Submission deadline has not passed");
+        require(!round.isFinalized, "Round is already finalized");
+
+        round.correctAnswer = _correctAnswer;
+        round.isFinalized = true;
+
+        uint256 closestGuess = 0;
+
+        for (uint256 i = 0; i < submissions[_roundId].length; i++) {
+            Submission memory submission = submissions[_roundId][i];
+            if (submission.entry > closestGuess && submission.entry <= round.correctAnswer) {
+                // Re-set closest guess
+                closestGuess = submission.entry;
+                // Re-set submission list
+                delete winners[_roundId];
+                winners[_roundId].push(submission.submitter);
+            } else if (submission.entry == closestGuess) {
+                winners[_roundId].push(submission.submitter);
+            }
+        }
+
+        uint256 prizePerWinner = round.potAmount / winners[_roundId].length;
+        for (uint256 i = 0; i < winners[_roundId].length; i++) {
+            opToken.safeTransfer(winners[_roundId][i], prizePerWinner);
+        }
+
+        emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer, prizePerWinner);
     }
 
     function withdrawFees() external onlyRole(OWNER_ROLE) {
