@@ -10,7 +10,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("ADMIN_ROLE");
 
     struct Round {
         string question;
@@ -53,6 +53,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         opToken = IERC20(_opTokenAddress);
         reserveAccount = _reserveAccount;
         _grantRole(OWNER_ROLE, msg.sender);
+        _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
     }
 
     function initRound(
@@ -60,7 +61,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         uint256 _submissionDeadline,
         uint256 _potAmount,
         uint256 _feeAmount
-    ) external onlyRole(ADMIN_ROLE) {
+    ) external onlyRole(OPERATOR_ROLE) {
         require(
             _submissionDeadline > block.timestamp,
             "Submission deadline must be in the future"
