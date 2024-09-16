@@ -38,7 +38,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         uint256 indexed roundId, string question, uint256 submissionDeadline, uint256 potAmount, uint256 feeAmount
     );
     event GuessSubmitted(uint256 indexed roundId, address indexed participant, uint256 guess);
-    event WinnerSelected(uint256 indexed roundId, address[] winners, uint256 correctAnswer, uint256 prizePerWinner);
+    event WinnerSelected(uint256 indexed roundId, address[] winners, uint256 correctAnswer);
     event FeesWithdrawn(address owner, uint256 amount);
 
     constructor(address _potTokenAddress, address _reserveAccount) {
@@ -103,12 +103,17 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
             }
         }
 
-        uint256 prizePerWinner = round.potAmount / winners[_roundId].length;
-        for (uint256 i = 0; i < winners[_roundId].length; i++) {
-            potToken.safeTransfer(winners[_roundId][i], prizePerWinner);
+        if (winners[_roundId].length > 0) {
+            uint256 prizePerWinner = round.potAmount / winners[_roundId].length;
+            for (uint256 i = 0; i < winners[_roundId].length; i++) {
+                potToken.safeTransfer(winners[_roundId][i], prizePerWinner);
+            }
+        } else {
+            // if no winners, send pot back to vault
+            potToken.safeTransfer(reserveAccount, round.potAmount);
         }
 
-        emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer, prizePerWinner);
+        emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer);
     }
 
     function withdrawFees() external onlyRole(OWNER_ROLE) {
