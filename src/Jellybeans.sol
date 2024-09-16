@@ -26,8 +26,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         uint256 entry;
     }
 
-    IERC20 public opToken;
-    address private reserveAccount;
+    IERC20 public immutable opToken;
+    address private immutable reserveAccount;
 
     uint256 public currentRound;
     mapping(uint256 => Round) public rounds; // round => Round
