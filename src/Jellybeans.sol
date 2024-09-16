@@ -34,23 +34,10 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     mapping(uint256 => Submission[]) public submissions; // round => Submission[]
 
     event RoundInitialized(
-        uint256 indexed roundId,
-        string question,
-        uint256 submissionDeadline,
-        uint256 potAmount,
-        uint256 feeAmount
+        uint256 indexed roundId, string question, uint256 submissionDeadline, uint256 potAmount, uint256 feeAmount
     );
-    event GuessSubmitted(
-        uint256 indexed roundId,
-        address indexed participant,
-        uint256 guess
-    );
-    event WinnerSelected(
-        uint256 indexed roundId,
-        address[] winners,
-        uint256 correctAnswer,
-        uint256 prizePerWinner
-    );
+    event GuessSubmitted(uint256 indexed roundId, address indexed participant, uint256 guess);
+    event WinnerSelected(uint256 indexed roundId, address[] winners, uint256 correctAnswer, uint256 prizePerWinner);
     event FeesWithdrawn(address owner, uint256 amount);
 
     constructor(address _opTokenAddress, address _reserveAccount) {
@@ -60,16 +47,11 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
     }
 
-    function initRound(
-        string memory _question,
-        uint256 _submissionDeadline,
-        uint256 _potAmount,
-        uint256 _feeAmount
-    ) external onlyRole(OPERATOR_ROLE) {
-        require(
-            _submissionDeadline > block.timestamp,
-            "Submission deadline must be in the future"
-        );
+    function initRound(string memory _question, uint256 _submissionDeadline, uint256 _potAmount, uint256 _feeAmount)
+        external
+        onlyRole(OPERATOR_ROLE)
+    {
+        require(_submissionDeadline > block.timestamp, "Submission deadline must be in the future");
 
         currentRound++;
         rounds[currentRound] = Round({
@@ -83,30 +65,16 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
 
         opToken.safeTransferFrom(reserveAccount, address(this), _potAmount);
 
-        emit RoundInitialized(
-            currentRound,
-            _question,
-            _submissionDeadline,
-            _potAmount,
-            _feeAmount
-        );
+        emit RoundInitialized(currentRound, _question, _submissionDeadline, _potAmount, _feeAmount);
     }
 
-    function submitGuess(
-        uint256 _roundId,
-        uint256 _guess
-    ) external payable nonReentrant {
+    function submitGuess(uint256 _roundId, uint256 _guess) external payable nonReentrant {
         Round storage round = rounds[_roundId];
         require(round.submissionDeadline > 0, "Round does not exist");
-        require(
-            block.timestamp < round.submissionDeadline,
-            "Submission deadline has passed"
-        );
+        require(block.timestamp < round.submissionDeadline, "Submission deadline has passed");
         require(msg.value == round.feeAmount, "Incorrect fee amount");
 
-        submissions[_roundId].push(
-            Submission({submitter: msg.sender, entry: _guess})
-        );
+        submissions[_roundId].push(Submission({submitter: msg.sender, entry: _guess}));
 
         emit GuessSubmitted(_roundId, msg.sender, _guess);
     }
@@ -115,7 +83,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         uint256 balance = address(this).balance;
         require(balance > 0, "No fees to withdraw");
 
-        (bool success, ) = _msgSender().call{value: balance}("");
+        (bool success,) = _msgSender().call{value: balance}("");
         require(success, "Failed to send fees to owner");
 
         emit FeesWithdrawn(_msgSender(), balance);
