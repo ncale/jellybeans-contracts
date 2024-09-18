@@ -32,13 +32,13 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     uint256 public currentRound;
     mapping(uint256 => Round) public rounds; // round => Round
     mapping(uint256 => Submission[]) public submissions; // round => Submission[]
-    mapping(uint256 => address[]) public winners; // round => address[]
+    mapping(uint256 => Submission[]) public winners; // round => Submission[]
 
     event RoundInitialized(
         uint256 indexed roundId, string question, uint256 submissionDeadline, uint256 potAmount, uint256 feeAmount
     );
-    event GuessSubmitted(uint256 indexed roundId, address indexed participant, uint256 guess);
-    event WinnerSelected(uint256 indexed roundId, address[] winners, uint256 correctAnswer);
+    event GuessSubmitted(uint256 indexed roundId, address indexed submitter, uint256 guess);
+    event WinnerSelected(uint256 indexed roundId, Submission[] winners, uint256 correctAnswer);
     event FeesWithdrawn(address owner, uint256 amount);
 
     constructor(address _potTokenAddress, address _reserveAccount) {
@@ -97,16 +97,16 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
                 closestGuess = submission.entry;
                 // Re-set submission list
                 delete winners[_roundId];
-                winners[_roundId].push(submission.submitter);
+                winners[_roundId].push(Submission({submitter: submission.submitter, entry: submission.entry}));
             } else if (submission.entry == closestGuess) {
-                winners[_roundId].push(submission.submitter);
+                winners[_roundId].push(Submission({submitter: submission.submitter, entry: submission.entry}));
             }
         }
 
         if (winners[_roundId].length > 0) {
             uint256 prizePerWinner = round.potAmount / winners[_roundId].length;
             for (uint256 i = 0; i < winners[_roundId].length; i++) {
-                potToken.safeTransfer(winners[_roundId][i], prizePerWinner);
+                potToken.safeTransfer(winners[_roundId][i].submitter, prizePerWinner);
             }
         } else {
             // if no winners, send pot back to vault
