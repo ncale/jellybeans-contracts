@@ -70,8 +70,6 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
             isFinalized: false
         });
 
-        _mint(address(this), currentRound, 1, "");
-
         emit RoundInitialized(currentRound, _question, _submissionDeadline, _potTokenAddress, _potAmount, _feeAmount);
     }
 
