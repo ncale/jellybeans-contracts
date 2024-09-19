@@ -28,8 +28,6 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         uint256 entry;
     }
 
-    address private immutable reserveAccount;
-
     uint256 public currentRound;
     mapping(uint256 => Round) public rounds; // round => Round
     mapping(uint256 => Submission[]) public submissions; // round => Submission[]
@@ -47,8 +45,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     event WinnerSelected(uint256 indexed roundId, Submission[] winners, uint256 correctAnswer);
     event FeesWithdrawn(address owner, uint256 amount);
 
-    constructor(address _reserveAccount) ERC1155("https://game-api.example/token/{id}.json") {
-        reserveAccount = _reserveAccount;
+    constructor() ERC1155("https://game-api.example/token/{id}.json") {
         _grantRole(OWNER_ROLE, msg.sender);
         _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
     }
@@ -72,8 +69,6 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
             correctAnswer: 0,
             isFinalized: false
         });
-
-        IERC20(_potTokenAddress).safeTransferFrom(reserveAccount, address(this), _potAmount);
 
         _mint(address(this), currentRound, 1, "");
 
@@ -119,16 +114,6 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
             }
         }
 
-        if (winners[_roundId].length > 0) {
-            uint256 prizePerWinner = round.potAmount / winners[_roundId].length;
-            for (uint256 i = 0; i < winners[_roundId].length; i++) {
-                round.token.safeTransfer(winners[_roundId][i].submitter, prizePerWinner);
-            }
-        } else {
-            // if no winners, send pot back to vault
-            round.token.safeTransfer(reserveAccount, round.potAmount);
-        }
-
         emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer);
     }
 
@@ -140,17 +125,6 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         require(success, "Failed to send fees to owner");
 
         emit FeesWithdrawn(_msgSender(), balance);
-    }
-
-    function withdrawTokens(uint256 _roundId, uint256 _amount) external onlyRole(OWNER_ROLE) {
-        Round storage round = rounds[_roundId];
-
-        uint256 balance = round.token.balanceOf(address(this));
-        require(balance >= _amount, "Not enough tokens to withdraw");
-
-        round.token.safeTransfer(reserveAccount, _amount);
-
-        emit FeesWithdrawn(_msgSender(), _amount);
     }
 
     function setURI(string memory _newURI) external onlyRole(OWNER_ROLE) {
