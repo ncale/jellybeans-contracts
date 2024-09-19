@@ -5,8 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
-contract Jellybeans is AccessControl, ReentrancyGuard {
+contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     using SafeERC20 for IERC20;
 
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -46,7 +47,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     event WinnerSelected(uint256 indexed roundId, Submission[] winners, uint256 correctAnswer);
     event FeesWithdrawn(address owner, uint256 amount);
 
-    constructor(address _reserveAccount) {
+    constructor(address _reserveAccount) ERC1155("https://game-api.example/token/{id}.json") {
         reserveAccount = _reserveAccount;
         _grantRole(OWNER_ROLE, msg.sender);
         _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
@@ -74,6 +75,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
 
         IERC20(_potTokenAddress).safeTransferFrom(reserveAccount, address(this), _potAmount);
 
+        _mint(address(this), currentRound, 1, "");
+
         emit RoundInitialized(currentRound, _question, _submissionDeadline, _potTokenAddress, _potAmount, _feeAmount);
     }
 
@@ -85,6 +88,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         require(msg.value == round.feeAmount, "Incorrect fee amount");
 
         submissions[_roundId].push(Submission({submitter: msg.sender, entry: _guess}));
+
+        _mint(msg.sender, _roundId, 1, "");
 
         emit GuessSubmitted(_roundId, msg.sender, _guess);
     }
@@ -146,6 +151,20 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
         round.token.safeTransfer(reserveAccount, _amount);
 
         emit FeesWithdrawn(_msgSender(), _amount);
+    }
+
+    function setURI(string memory _newURI) external onlyRole(OWNER_ROLE) {
+        _setURI(_newURI);
+    }
+
+    function supportsInterface(bytes4 _interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155, AccessControl)
+        returns (bool)
+    {
+        return super.supportsInterface(_interfaceId);
     }
 
     receive() external payable {}
