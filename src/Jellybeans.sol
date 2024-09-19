@@ -92,6 +92,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard {
     function setCorrectAnswer(uint256 _roundId, uint256 _correctAnswer) external onlyRole(OPERATOR_ROLE) nonReentrant {
         Round storage round = rounds[_roundId];
 
+        require(round.submissionDeadline > 0, "Round does not exist");
         require(block.timestamp >= round.submissionDeadline, "Submission deadline has not passed");
         require(!round.isFinalized, "Round is already finalized");
 
