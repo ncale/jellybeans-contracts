@@ -51,6 +51,17 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     /// @notice A mapping of round numbers to an array of winning submissions
     mapping(uint256 => Submission[]) public winners;
 
+    // ============ Errors ============
+
+    error RoundDoesNotExist();
+    error SubmissionDeadlinePassed();
+    error IncorrectFeeAmount();
+    error SubmissionDeadlineNotInFuture();
+    error SubmissionDeadlineNotPassed();
+    error RoundAlreadyFinalized();
+    error NoFeesToWithdraw();
+    error FailedToSendFees();
+
     // ============ Events ============
 
     event RoundInitialized(
@@ -85,9 +96,15 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     function submitGuess(uint256 _roundId, uint256 _guess) external payable nonReentrant {
         Round storage round = rounds[_roundId];
 
-        require(round.submissionDeadline > 0, "Round does not exist");
-        require(block.timestamp < round.submissionDeadline, "Submission deadline has passed");
-        require(msg.value == round.feeAmount, "Incorrect fee amount");
+        if (round.submissionDeadline == 0) {
+            revert RoundDoesNotExist();
+        }
+        if (block.timestamp >= round.submissionDeadline) {
+            revert SubmissionDeadlinePassed();
+        }
+        if (msg.value != round.feeAmount) {
+            revert IncorrectFeeAmount();
+        }
 
         submissions[_roundId].push(Submission({submitter: msg.sender, entry: _guess}));
 
@@ -116,7 +133,9 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         uint256 _numWinners,
         uint256 _feeAmount
     ) external onlyRole(OPERATOR_ROLE) {
-        require(_submissionDeadline > block.timestamp, "Submission deadline must be in the future");
+        if (_submissionDeadline <= block.timestamp) {
+            revert SubmissionDeadlineNotInFuture();
+        }
 
         currentRound++;
         rounds[currentRound] = Round({
@@ -145,9 +164,15 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     function setCorrectAnswer(uint256 _roundId, uint256 _correctAnswer) external onlyRole(OPERATOR_ROLE) nonReentrant {
         Round storage round = rounds[_roundId];
 
-        require(round.submissionDeadline > 0, "Round does not exist");
-        require(block.timestamp >= round.submissionDeadline, "Submission deadline has not passed");
-        require(!round.isFinalized, "Round is already finalized");
+        if (round.submissionDeadline == 0) {
+            revert RoundDoesNotExist();
+        }
+        if (block.timestamp < round.submissionDeadline) {
+            revert SubmissionDeadlineNotPassed();
+        }
+        if (round.isFinalized) {
+            revert RoundAlreadyFinalized();
+        }
 
         round.correctAnswer = _correctAnswer;
         round.isFinalized = true;
@@ -174,11 +199,14 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
     function withdrawFees() external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 balance = address(this).balance;
-        require(balance > 0, "No fees to withdraw");
+        if (balance == 0) {
+            revert NoFeesToWithdraw();
+        }
 
         (bool success,) = _msgSender().call{value: balance}("");
-        require(success, "Failed to send fees to owner");
-
+        if (!success) {
+            revert FailedToSendFees();
+        }
         emit FeesWithdrawn(_msgSender(), balance);
     }
 
