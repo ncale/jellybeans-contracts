@@ -6,12 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 /**
  * @title Jellybeans
  * @dev A contract for managing guessing game rounds with ERC1155 tokens
  */
-contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
+contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Supply {
     using SafeERC20 for IERC20;
 
     // ============ Constants ============
@@ -214,7 +215,14 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         _setURI(_newURI);
     }
 
-    // ============ Public Functions ============
+    // ============ Required Overrides ============
+
+    function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
+        internal
+        override(ERC1155, ERC1155Supply)
+    {
+        super._update(from, to, ids, values);
+    }
 
     function supportsInterface(bytes4 _interfaceId)
         public
