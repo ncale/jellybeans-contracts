@@ -7,11 +7,19 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
+/**
+ * @title Jellybeans
+ * @dev A contract for managing guessing game rounds with ERC1155 tokens
+ */
 contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     using SafeERC20 for IERC20;
 
+    // ============ Constants ============
+
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+
+    // ============ Structs ============
 
     struct Round {
         string question;
@@ -28,10 +36,14 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         uint256 entry;
     }
 
+    // ============ State Variables ============
+
     uint256 public currentRound;
     mapping(uint256 => Round) public rounds; // round => Round
     mapping(uint256 => Submission[]) public submissions; // round => Submission[]
     mapping(uint256 => Submission[]) public winners; // round => Submission[]
+
+    // ============ Events ============
 
     event RoundInitialized(
         uint256 indexed roundId,
@@ -45,10 +57,14 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     event WinnerSelected(uint256 indexed roundId, Submission[] winners, uint256 correctAnswer);
     event FeesWithdrawn(address owner, uint256 amount);
 
+    // ============ Constructor ============
+
     constructor() ERC1155("https://game-api.example/token/{id}.json") {
         _grantRole(OWNER_ROLE, msg.sender);
         _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
     }
+
+    // ============ External Functions ============
 
     function initRound(
         string memory _question,
@@ -129,6 +145,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         _setURI(_newURI);
     }
 
+    // ============ Public Functions ============
+
     function supportsInterface(bytes4 _interfaceId)
         public
         view
@@ -138,6 +156,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
     {
         return super.supportsInterface(_interfaceId);
     }
+
+    // ============ Fallback Function ============
 
     receive() external payable {}
 }
