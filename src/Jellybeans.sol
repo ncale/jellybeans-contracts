@@ -16,6 +16,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
     // ============ Constants ============
 
+    /// @notice A role that can initiate and close rounds
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     // ============ Structs ============
@@ -37,10 +38,17 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
     // ============ State Variables ============
 
+    /// @notice The current round number
     uint256 public currentRound;
-    mapping(uint256 => Round) public rounds; // round => Round
-    mapping(uint256 => Submission[]) public submissions; // round => Submission[]
-    mapping(uint256 => Submission[]) public winners; // round => Submission[]
+
+    /// @notice A mapping of round numbers to round details
+    mapping(uint256 => Round) public rounds;
+
+    /// @notice A mapping of round numbers to an array of all submissions
+    mapping(uint256 => Submission[]) public submissions;
+
+    /// @notice A mapping of round numbers to an array of winning submissions
+    mapping(uint256 => Submission[]) public winners;
 
     // ============ Events ============
 
@@ -65,6 +73,39 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
     // ============ External Functions ============
 
+    /**
+     * @notice Allows a user to submit a guess for the current round
+     *
+     * @dev Mints an ERC1155 token to the submitter as a receipt
+     * @param _roundId The ID of the round to submit a guess for
+     * @param _guess The user's guess for the round
+     */
+    function submitGuess(uint256 _roundId, uint256 _guess) external payable nonReentrant {
+        Round storage round = rounds[_roundId];
+
+        require(round.submissionDeadline > 0, "Round does not exist");
+        require(block.timestamp < round.submissionDeadline, "Submission deadline has passed");
+        require(msg.value == round.feeAmount, "Incorrect fee amount");
+
+        submissions[_roundId].push(Submission({submitter: msg.sender, entry: _guess}));
+
+        _mint(msg.sender, _roundId, 1, "");
+
+        emit GuessSubmitted(_roundId, msg.sender, _guess);
+    }
+
+    // ============ Operator Functions ============
+
+    /**
+     * @notice Initializes a new round of the guessing game
+     *
+     * @dev Only callable by addresses with the OPERATOR_ROLE
+     * @param _question The question or prompt for the round
+     * @param _submissionDeadline The timestamp after which no more guesses can be submitted
+     * @param _potTokenAddress The address of the ERC20 token used for the pot
+     * @param _potAmount The total amount of tokens in the pot for this round
+     * @param _feeAmount The fee amount in wei required to submit a guess
+     */
     function initRound(
         string memory _question,
         uint256 _submissionDeadline,
@@ -88,20 +129,13 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         emit RoundInitialized(currentRound, _question, _submissionDeadline, _potTokenAddress, _potAmount, _feeAmount);
     }
 
-    function submitGuess(uint256 _roundId, uint256 _guess) external payable nonReentrant {
-        Round storage round = rounds[_roundId];
-
-        require(round.submissionDeadline > 0, "Round does not exist");
-        require(block.timestamp < round.submissionDeadline, "Submission deadline has passed");
-        require(msg.value == round.feeAmount, "Incorrect fee amount");
-
-        submissions[_roundId].push(Submission({submitter: msg.sender, entry: _guess}));
-
-        _mint(msg.sender, _roundId, 1, "");
-
-        emit GuessSubmitted(_roundId, msg.sender, _guess);
-    }
-
+    /**
+     * @notice Sets the correct answer for a round and determines the winners
+     *
+     * @dev Only callable by addresses with the OPERATOR_ROLE after the submission deadline
+     * @param _roundId The ID of the round to set the correct answer for
+     * @param _correctAnswer The correct answer for the round
+     */
     function setCorrectAnswer(uint256 _roundId, uint256 _correctAnswer) external onlyRole(OPERATOR_ROLE) nonReentrant {
         Round storage round = rounds[_roundId];
 
@@ -129,6 +163,8 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
         emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer);
     }
+
+    // ============ Admin Functions ============
 
     function withdrawFees() external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 balance = address(this).balance;
