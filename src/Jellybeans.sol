@@ -4,13 +4,14 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Pausable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 /**
  * @title Jellybeans
  * @dev A contract for managing guessing game rounds with ERC1155 tokens
  */
-contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Supply {
+contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Pausable, ERC1155Supply {
     // ============ Constants ============
 
     /// @notice A role that can initiate and close rounds
@@ -211,11 +212,19 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Supply {
         _setURI(_newURI);
     }
 
+    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
     // ============ Required Overrides ============
 
     function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
         internal
-        override(ERC1155, ERC1155Supply)
+        override(ERC1155, ERC1155Pausable, ERC1155Supply)
     {
         super._update(from, to, ids, values);
     }
