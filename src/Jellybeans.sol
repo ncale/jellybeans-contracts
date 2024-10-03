@@ -26,6 +26,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         uint256 submissionDeadline;
         IERC20 token;
         uint256 potAmount;
+        uint256 numWinners;
         uint256 feeAmount;
         uint256 correctAnswer;
         bool isFinalized;
@@ -58,6 +59,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         uint256 submissionDeadline,
         address potTokenAddress,
         uint256 potAmount,
+        uint256 numWinners,
         uint256 feeAmount
     );
     event GuessSubmitted(uint256 indexed roundId, address indexed submitter, uint256 guess);
@@ -111,6 +113,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         uint256 _submissionDeadline,
         address _potTokenAddress,
         uint256 _potAmount,
+        uint256 _numWinners,
         uint256 _feeAmount
     ) external onlyRole(OPERATOR_ROLE) {
         require(_submissionDeadline > block.timestamp, "Submission deadline must be in the future");
@@ -121,12 +124,15 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
             submissionDeadline: _submissionDeadline,
             token: IERC20(_potTokenAddress),
             potAmount: _potAmount,
+            numWinners: _numWinners,
             feeAmount: _feeAmount,
             correctAnswer: 0,
             isFinalized: false
         });
 
-        emit RoundInitialized(currentRound, _question, _submissionDeadline, _potTokenAddress, _potAmount, _feeAmount);
+        emit RoundInitialized(
+            currentRound, _question, _submissionDeadline, _potTokenAddress, _potAmount, _numWinners, _feeAmount
+        );
     }
 
     /**
