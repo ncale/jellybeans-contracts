@@ -16,7 +16,6 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
     // ============ Constants ============
 
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     // ============ Structs ============
@@ -59,9 +58,9 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
 
     // ============ Constructor ============
 
-    constructor() ERC1155("https://game-api.example/token/{id}.json") {
-        _grantRole(OWNER_ROLE, msg.sender);
-        _setRoleAdmin(OPERATOR_ROLE, OWNER_ROLE);
+    constructor(address _owner, string memory _uri) ERC1155(_uri) {
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(OPERATOR_ROLE, _owner);
     }
 
     // ============ External Functions ============
@@ -131,7 +130,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         emit WinnerSelected(_roundId, winners[_roundId], _correctAnswer);
     }
 
-    function withdrawFees() external onlyRole(OWNER_ROLE) {
+    function withdrawFees() external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 balance = address(this).balance;
         require(balance > 0, "No fees to withdraw");
 
@@ -141,7 +140,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155 {
         emit FeesWithdrawn(_msgSender(), balance);
     }
 
-    function setURI(string memory _newURI) external onlyRole(OWNER_ROLE) {
+    function setURI(string memory _newURI) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setURI(_newURI);
     }
 
