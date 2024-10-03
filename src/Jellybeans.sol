@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
@@ -13,8 +11,6 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
  * @dev A contract for managing guessing game rounds with ERC1155 tokens
  */
 contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Supply {
-    using SafeERC20 for IERC20;
-
     // ============ Constants ============
 
     /// @notice A role that can initiate and close rounds
@@ -25,7 +21,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Supply {
     struct Round {
         string question;
         uint256 submissionDeadline;
-        IERC20 token;
+        address token;
         uint256 potAmount;
         uint256 numWinners;
         uint256 feeAmount;
@@ -142,7 +138,7 @@ contract Jellybeans is AccessControl, ReentrancyGuard, ERC1155, ERC1155Supply {
         rounds[currentRound] = Round({
             question: _question,
             submissionDeadline: _submissionDeadline,
-            token: IERC20(_potTokenAddress),
+            token: _potTokenAddress,
             potAmount: _potAmount,
             numWinners: _numWinners,
             feeAmount: _feeAmount,
